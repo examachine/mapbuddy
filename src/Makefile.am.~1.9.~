@@ -1,0 +1,38 @@
+## Process this file with automake to create Makefile.in
+
+include @CGAL_MAKEFILE@
+AM_CXXFLAGS = \
+           $(CGAL_CXXFLAGS) \
+           $(LONG_NAME_PROBLEM_CXXFLAGS) \
+           $(DEBUG_OPT)
+##           $(CCPP_FLAGS) -I$(CCPP_INCLUDES) \
+AM_LDFLAGS = \
+          $(LONG_NAME_PROBLEM_LDFLAGS) \
+          $(CGAL_LDFLAGS)
+##	  $(CCPP_LIBS) \
+
+INCLUDES = -I$(top_srcdir)/xmlrpc++/src -I$(CGAL_INCL_DIR)
+
+bin_PROGRAMS  = mapbuddy-server test-cgal test-rpc
+
+mapbuddy_server_SOURCES = mapbuddy-server.cxx Map.cxx MapRPC.cxx \
+ RouteRPC.cxx Store.cxx
+mapbuddy_server_LDADD = $(top_builddir)/xmlrpc++/src/libXmlRpc.a
+
+test_rpc_SOURCES = test-rpc.cxx
+test_rpc_LDADD = $(top_builddir)/xmlrpc++/src/libXmlRpc.a
+
+test_cgal_SOURCES = test-cgal.cxx
+
+##test_misc_SOURCES = test-misc.cxx
+
+
+## @INTLLIBS@ @ALLOCA@
+
+##localedir = $(datadir)/locale
+
+##-I../intl -DLOCALEDIR=\"$(localedir)\"
+
+blah:
+	echo $(CXXFLAGS)
+	echo $(LDFLAGS)

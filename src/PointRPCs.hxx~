@@ -1,0 +1,33 @@
+//
+//
+// C++ Interface for module: PointRPCs
+//
+// Description: 
+//
+//
+// Author: exa
+//
+// Copyright: See COPYING file that comes with this distribution
+//
+//
+
+#ifndef PointRPCs_Interface
+#define PointRPCs_Interface
+
+#include "General.hxx"
+
+// Arguments are as follows:
+// param 0, a point struct x,y for source location
+// param 1, a point struct x,y for destination location
+class PointInsertRPC : public XmlRpcServerMethod
+{
+public:
+  RouteRPC(XmlRpcServer* s) : XmlRpcServerMethod("mapbuddy.route", s) {}
+
+  void execute(XmlRpcValue& params, XmlRpcValue& result);
+  std::string help();
+
+};
+
+
+#endif
