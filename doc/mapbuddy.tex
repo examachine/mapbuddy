@@ -1,0 +1,312 @@
+% -*-latex-*-
+% Typical article template
+
+\documentclass[a4paper,10pt]{article}
+\usepackage{amsmath}
+\usepackage{amstext}
+\usepackage{amsbsy}
+\title{ Map Buddy: A Mobile Map Application}
+
+\author{Eray \"Ozkural and Kartal Tabak}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Evolution of mobile technology has accelerated a trend to access geographic
+knowledge using small mobile units. With the advanced processing power,
+wireless communication and persistent storage in mobile units, it becomes
+desirable to take advantage of locational knowledge. Although there are
+several projects on this subject, few services have been designed with the
+mobile users in mind. Map Buddy is a mobile application for access to
+real-time city maps and querying routes for travel. We aim to fulfill a
+specific map service to this end.
+
+Map Buddy will be a client/server application with all expensive processing
+and storage offloaded to a server. The clients will be mobile units which
+are naturally equipped with limited display capability. Mobile users will be
+able to make map queries and graphically browse their physical neighborhood.
+They will also be able to query routes and retrieve the result in graphical
+and textual form. Also considered is a service to let users update tokens on
+the map for a kind of geographical whiteboard among users sharing the
+server. For instance, road users may indicate where an accident has occured.
+For such use, it may also be desirable to allow groups of users since all
+users may not trust each other.
+
+We will design a simple application protocol to define these services. The
+server will be implemented in an efficient language for a daemon that can
+run over a UNIX machine. The first mobile client will be implemented in Java
+language, presumably for laptops. We are essentially abandoning the idea of
+using a huge, complex and costly GIS for the sake of a self-contained, open
+and efficient modern code suitable for mobile applications which can be
+rapidly deployed at little or no cost. We expect that the demonstration
+platform of our project will be eventually applicable to a detailed data of
+Ankara city.
+
+\section{Background}
+
+Graph theoretical algorithms have improved to a point where we can
+answer all the queries of the system described above. Almost any
+important path query algorithm except k-th shortest path algorithms
+can be found in an algorithm book for which \cite{algo} sets a decent
+standard. K-th shortest path algorithm has been refined a bit over the
+previous ten years, and we will use a reasonable algorithm among the
+alternatives. One of the most recent and comprehensive works on this
+area is \cite{eppstein}.  There are various attempts to provide
+geographic information. These studies are generally city based, and as
+an object of our study, Ankara has several classes of such
+information.  The zoomable map of the municipality of Ankara is the
+most detailed one. It can be accessed via \cite{burc}. But this map
+does neither concern about mobility, nor provides graph based
+information such as "How to go from X to Y?" since the map is
+implemented only as layers of images. Another project is by Opel
+International. \cite{opel} They supplied a graph based routing service
+via web, but this service is not specific to Ankara and only the main
+streets are included in the map.  Besides, it is limited to a path
+query service. GSM service providers are providing similar services,
+queries such as "Where is the nearest hospital?", but they do not
+include the routing information.  Yet another project is implemented
+by ASKI. \cite{aski} It is very similar to \cite{burc}, with a bit
+differences in the user interface and queries. This project has the
+same deficiencies. A popular web service for map queries is
+maps.yahoo.com which allows personalized views of the maps with
+bookmarks on the map and integrates satellite/aerial photos as well as
+US road information down to street level. \cite{yahoo} This system has
+the amazing feature of querying for an arbitrary postal address
+accurately. All of these systems are addressing certain needs and
+classes of users, but none of them actually solves the problems and
+needs of a mobile user as we have described.
+
+
+\section{Map conceptualization and structure}
+
+\subsection{Location information for mobile units}
+
+We assume in our work that the mobile platform in question already provides
+for a user location service that can work at the resolution of a city-block
+or better. It is sufficient that the mobile unit can query for its own
+location in our system.
+
+\subsection{Basic information requirements}
+
+Maps contain geographic information with varying objectives, i.e. a road map
+as distinguished from a military map. We first need to establish the kinds
+of available information for specifying the content of our map. Our map
+application framework is designed to constitute a basic service for building
+more sophisticated and specific applications targeting mobile users who live
+in cities and towns. We can easily identify at least three kinds of entities
+that will be of interest to mobile users: people, places and roads.  While a
+traditional map service is usually regarded as a discovery tool, it may also
+serve as a place for dynamic geographic information. We should support all
+such potential uses at least in the design phase in order to avoid
+indefinitely blocking future extensions which will most certainly be
+progressing toward more mobility and networking.
+
+With these considerations, we can argue that the map should facilitate at
+least the following classes of information.
+
+\begin{description}
+\item[Point location] A unit of information which has geographic meaning
+  when expressed with only a single coordinate. We can organize points
+  according to their types. Each point can be given a type, in which case a
+  corresponding graphical representation will be used for it. This kind of
+  information may be used for bookmarks on the map, location of individuals,
+  vehicles and road intersections.
+\item[Region location] A region on the map which corresponds to an object in
+  the physical world. Again a type should be given to indicate proper
+  rendering of the polygon on the display device together with any
+  additional attributes such as name or date of creation. For example, a
+  city block or a park may be conveniently represented by such a system.
+\item[Roads/routes] The motor vehicle roads, railroads, walking lanes are
+  indispensable in an urban map. A road contains extra information with
+  regards to its directionality, length and type such as highway or
+  residential road. \footnote{It is also considerable that entire routes may
+    be stored on the map while not a strict necessity.}
+\end{description}
+
+From a close inspection of geographic information units, we can see the
+following attributes which are possibly common to each kind of entity:
+\begin{description}
+\item[Type] The type of entity indicates the ways in which the entity
+  differs conceptually from other entities in the same class of geographic
+  information. That is how one distinguishes a building from a parking lot,
+  and the type information is one that is often considered as
+  \emph{overlays} of maps. For an analogy, consider that we have transparent
+  maps of train stations and gas stations which, when overlayed on the basic
+  urban map, visually compose a station map containing both types of
+  entities.
+\item[Name] Significant entities often have names. For instance, the T\"ubitak
+  building is recognized among Ankara citizens because of its visual
+  domination and institutional importance.
+\item[Color/Icon/Texture] For certain structures, it may be well possible to
+  denote specific kinds of 2d graphical representation for it may help
+  easier visual identification. For instance, METU buildings may be
+  represented by a small METU icon in addition to their polygonal extent.
+\end{description}  
+
+Note that this list may be extended quite easily. We are consciously
+excluding those features which may require more processing power and network
+bandwidth than can be afforded by typical mobile units up to 2005.
+
+In addition, a zoom threshold per each type can be instrumental in
+specifying what is to be displayed at a given zoom level. We can use a
+simple numerical measure to aid us in resolution management when the user
+zooms in and out. Above a specified zoom-level, a type of unit i.e.
+residential blocks, may be eliminated from the map to avoid cluttering.
+
+\subsection{Operations}
+
+We must foresee the basic kinds of operations we would like to support in
+advance.  These operations should also be efficient since several users may
+be executing them at once.
+
+We will perform the following kinds of queries on the map:
+\begin{description}
+\item[Rectangular query] a portion of the map, possibly subject to detail
+  management for display on a mobile device. We would ideally like the user
+  to be able to zoom in/out and move in eight directions easily and without
+  difficulty.
+\item[Route query] a suitable path from point A to point B. A good path is
+  typically one that is shortest and is without obstacles.
+\end{description}
+
+We would also like to perform the following kinds of updates:
+\begin{description}
+\item[Update point location] Required for people at least. A major emphasis
+  of our project is the dynamic nature of urban maps. Mobile users may tend
+  to travel quite frequently in large cities, and such information can be
+  useful even in a relatively small scale.
+\item[Update region location] Required for modifying information about a new
+  club, for instance.
+\item[Update route] For people who would like to communicate and store
+  routes.
+\end{description}
+
+However, for a proof-of-concept implementation we should be content with the
+first kind of update operation which easily allows us to implement bookmarks
+and real-time individual location display.
+
+\subsection{Data structures and algorithms}
+
+Every physical point must contain coordinates in a uniform way, we can use a
+standard co-ordinate system like GPS for this purpose.
+
+To support point and rectangular queries, we should store all the this
+information in an efficient way using appropriate geometric structures. Most
+of our requirements are satisfied by existing algorithms and data structures
+found in a standard computational geometry text such as \cite{compgeom}. The
+implementation of most of these algorithms are publicly available through free
+software libraries such as \cite{cgal}. 
+
+\begin{description}
+\item[points] a set of labeled objects, since some points in our definition
+  are mobile (i.e. persons) and some other points are accessed by other
+  structures (i.e. street intersections). To carry out the map queries, we
+  require a 2d point set data structure which allows various geometric
+  queries including isorectangular queries and k-nearest neighbors in an
+  efficient fashion. The design of such a combinatorial software platform
+  may be found in \cite{leda}. The attributes of name and type are stored
+  per point and an auxiliary index at least over name attributes must be
+  supported. \footnote{For instance, we would like to query a point with its
+  name. We may also consider in the future such queries as ``Where is the
+  nearest person?``}
+\item[regions] a set of polygons forming a planar graph with efficient
+  storage.  This can be implemented with a standard DCEL \footnote{A common
+    representation for planar graphs}. The points of regions in the planar
+  graph correspond to the 2d point set structure. Therefore, once we obtain
+  a rectangular query over points, we can extract from the DCEL the subset
+  of the planar graph whose polygons should be subsequently clipped for
+  preparing display on the mobile unit.
+\item[routes] transportation information can be represented with a weighted
+  directed graph whose vertices are road intersections/points \footnote{like
+    intersection of 1st Ave. and 20th St.} and edges are road segments
+  \footnote{which has an integer index in the planar graph structure}.  The
+  weight of an edge represents the length of a road segment. The directions
+  of edges correspond to road directions naturally.  indicated previously,
+  road intersections and end points are represented by our 2d point set and
+  the road segments are represented as regions in DCEL.
+\end{description}
+
+Let us now describe how we can calculate the route from current location to
+a destination. First, the input coordinates must be converted into vertices
+of the transportation graph. For this discretization, we can use a k-nearest
+points query on the point set. Consequently, we can compute either a
+shortest time path or a shortest length path over the transportation graph.
+We will use k-shortest paths algorithm on a time-weighted or length-weighted
+graph for this purpose. The time elapsed over an edge of the time-weighted
+graph can be taken to be an average speed determined according to road type
+and segment shape multiplied by road length. \footnote{We may simplify this
+  calculation by ignoring segment shape or ramps and simply taking the speed
+  to be constant for a road type} The resulting paths can then be
+conveyed either graphically or textually.
+
+In addition to this, in a future system we may imagine that the obstacles
+are taken into account in the calculation of paths. We suggest a weight
+adjustment scheme for increasing the weight (time or length) of edges with a
+suitable factor temporarily, where traffic jams or accidents are reported.
+
+\subsection{Map views}
+
+A group is a set of users. Any user can start a group. To join a group, an
+existing member must approve the join request. To remove a user, a user must
+take action and another must confirm. A group which has not been logged on
+to by any member for a long period of time \footnote{For instance a year} is
+automatically deleted from the system. The group operations should be very
+simple so as not to betray the efficiency of mobile access.
+
+Each group effectively views a different map. This is achieved by augmenting
+a common map with group-level information. For instance, a large group of
+friends can use this to mark relevant events for their interests. Likewise,
+for personal maps (such as bookmarks).
+
+Each user can make his own geographical information visible or invisible.
+This can also be done on a per-group basis.
+
+The demonstration platform will have a single group to which all users are
+automatically added to. However, it should be an easy matter to provide for
+the full design suggested in this section.
+
+\subsection{User Interface}
+
+The UI design of the client is fairly obvious, and we plan to take the
+interface of \cite{yahoo} as a model to base ours upon. On startup, the
+system centers a street-level map on current user location. User can move
+about the map either by choosing a new center or one of the navigation
+buttons for eight main directions. The user can also change the zoom level
+from a predetermined list of appropriate zoom levels, or zoom in and out of
+the current level. The user should be able to query points by text
+\footnote{However, we will not implement a fault-tolerant scheme for text
+  queries for demonstration platform}. The bookmarks can be managed in
+typical web browser fashion. In route queries, we let the user select
+the source and destination directly, from bookmarks or current location.
+The user can also change visibility status.
+
+\section{Architecture and Platform}
+
+The architecture we have chosen is a simplistic client/server
+separation in which the RPCs are sent over TCP using an application
+protocol. The target platform for the server is considered to be an
+ordinary UNIX server which will run a daemon to process incoming
+requests. The requests may be at a rate of several queries per second.
+Therefore, we require a language that can be used to implement
+efficient algorithms.  C++ is an efficient imperative language and the
+free software g++ compiler is well supported for a myriad of platforms
+which provides a very large subset of ISO C++ standard. Of course, the
+most important factor for choosing C++ for server process is the
+availability of free software libraries of computational geometry code
+such as CGAL.  \cite{cgal}
+
+While Java 2 may be thought of as a suitable platform for the
+graphical client in the upcoming year 2004, it may not be an optimal
+choice for a server which will support hundreds, if not thousands of
+threads per server.  For the GUI, however, we project that a Java 2
+solution will be available for a good number of handheld devices by
+the time deliverables will be ready.
+
+\bibliography{mapbuddy} \bibliographystyle{plain}
+
+\end{document}
